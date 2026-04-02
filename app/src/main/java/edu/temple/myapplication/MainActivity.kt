@@ -3,6 +3,8 @@ package edu.temple.myapplication
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.graphics.Color.BLUE
+import android.graphics.Color.GREEN
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
@@ -59,21 +61,27 @@ class MainActivity : AppCompatActivity() {
         )
 
         timerTextView = findViewById<TextView>(R.id.textView)
-
-        findViewById<Button>(R.id.startButton).setOnClickListener {
+        val startButton = findViewById<Button>(R.id.startButton)
+        val stopButton = findViewById<Button>(R.id.stopButton)
+        startButton.setOnClickListener {
             if (isConnected){
                 if(timerBinder.paused || !timerBinder.isRunning){
                     timerBinder.start(10)
+                    startButton.text = "PAUSE"
+                    startButton.setBackgroundColor(BLUE)
+
                 }
                 else{
                     timerBinder.pause()
+                    startButton.text = "START"
+                    startButton.setBackgroundColor(GREEN)
                 }
 
             }
 
         }
         
-        findViewById<Button>(R.id.stopButton).setOnClickListener {
+        stopButton.setOnClickListener {
             if (isConnected) timerBinder.stop()
 
         }
