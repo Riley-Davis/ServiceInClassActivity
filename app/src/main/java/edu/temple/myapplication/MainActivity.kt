@@ -14,6 +14,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.Button
 import android.widget.TextView
+import androidx.appcompat.view.menu.MenuView
 import java.util.Timer
 import kotlin.concurrent.timer
 
@@ -91,14 +92,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun startAction(){
+    fun startAction(item: MenuItem){
         if (isConnected){
             if(timerBinder.paused || !timerBinder.isRunning){
                 timerBinder.start(10)
+                item.icon = getDrawable(R.drawable.pause)
             }
             else{
                 timerBinder.pause()
-                            }
+                item.icon = getDrawable(R.drawable.play_arrow)
+            }
 
         }
     }
@@ -122,10 +125,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
 
-        when (item.itemId){
-            R.id.actionStart -> startAction()
-            R.id.actionStop -> stopAction()
+        return when (item.itemId){
+            R.id.actionStart -> {startAction(item)
+                                true}
+            R.id.actionStop -> {stopAction()
+                                true}
+            else -> false
         }
-        return super.onOptionsItemSelected(item)
+
     }
 }
