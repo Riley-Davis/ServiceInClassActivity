@@ -1,6 +1,7 @@
 package edu.temple.myapplication
 
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.graphics.Color.BLUE
@@ -10,6 +11,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Button
@@ -19,25 +21,37 @@ import kotlin.concurrent.timer
 
 class MainActivity : AppCompatActivity() {
 
-    lateinit var timerBinder: TimerService.TimerBinder
+
+
+    private var timerBinder: TimerService.TimerBinder? = null
     var isConnected = false
 
     lateinit var timerTextView: TextView
-    val timerHandler = Handler(Looper.getMainLooper()){
-        timerTextView.text = it.what.toString()
+
+    private val defaultValue = 20
+
+    private val handler = Handler(Looper.getMainLooper()){
+        msg -> timerTextView.text = msg.what.toString()
         true
     }
-    val serviceConnection = object : ServiceConnection{
+
+
+    private val conn = object: ServiceConnection{
         override fun onServiceConnected(p0: ComponentName?, p1: IBinder?) {
             timerBinder = p1 as TimerService.TimerBinder
-            timerBinder.setHandler(timerHandler)
+            timerBinder?.setHandler(handler)
             isConnected = true
         }
 
         override fun onServiceDisconnected(p0: ComponentName?) {
+            timerBinder = null
             isConnected = false
         }
     }
+
+
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -56,59 +70,60 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-
-
-        bindService(
-            Intent(this, TimerService::class.java),
-            serviceConnection,
-            BIND_AUTO_CREATE
-        )
-
         timerTextView = findViewById<TextView>(R.id.textView)
         val startButton = findViewById<Button>(R.id.startButton)
         val stopButton = findViewById<Button>(R.id.stopButton)
         startButton.setOnClickListener {
-            if (isConnected){
-                if(timerBinder.paused || !timerBinder.isRunning){
-                    timerBinder.start(10)
-                    startButton.text = "PAUSE"
-                    startButton.setBackgroundColor(BLUE)
-
-                }
-                else{
-                    timerBinder.pause()
-                    startButton.text = "START"
-                    startButton.setBackgroundColor(GREEN)
-                }
-
-            }
+            //if (isConnected) {
+                val savedValue = timerBinder?.getSavedValue() ?: -1
+                val startValue = if (savedValue != -1) savedValue else defaultValue
+            Log.d("startButton", startValue.toString())
+                timerBinder?.start(startValue)
+            //}
 
         }
         
         stopButton.setOnClickListener {
-            if (isConnected) timerBinder.stop()
-
+            if (isConnected){
+                timerBinder?.pause()
+            }
         }
     }
 
     fun startAction(){
-        if (isConnected){
-            if(timerBinder.paused || !timerBinder.isRunning){
-                timerBinder.start(10)
-            }
-            else{
-                timerBinder.pause()
-                            }
-
-        }
+        //if (isConnected) {
+            val savedValue = timerBinder?.getSavedValue() ?: -1
+            val startValue = if (savedValue != -1) savedValue else defaultValue
+            timerBinder?.start(startValue)
+        //}
     }
 
     fun stopAction(){
-        if (isConnected) timerBinder.stop()
+        if (isConnected){
+            timerBinder?.pause()
+        }
+    }
+
+    override fun onStart(){
+        super.onStart()
+        bindService(
+            Intent(this, TimerService::class.java),
+            conn,
+            Context.BIND_AUTO_CREATE
+        )
+    }
+
+    override fun onStop(){
+        super.onStop()
+        if(isConnected){
+            unbindService(conn)
+
+        }
+        isConnected = false
     }
 
     override fun onDestroy() {
-        unbindService(serviceConnection)
+        unbindService(conn)
         super.onDestroy()
     }
 
